@@ -1,0 +1,50 @@
+---
+# meshcore-wdgw -- WDGoWars feeder for MeshCore node observations
+#
+# Standalone stack: this does NOT need to run alongside an ADS-B feeder
+# or any other stack. It only needs network access to your MeshCore
+# duplexer's second connection slot.
+#
+# Run with: docker compose up -d
+
+services:
+  meshcore-wdgwars:
+    image: ghcr.io/jaas666/meshcore-wdgw:latest
+    container_name: meshcore-wdgwars
+    restart: unless-stopped
+
+    environment:
+      # Duplexer's second-connection host/port (NOT the MeshCore node
+      # directly -- see README for why). Defaults to host.docker.internal,
+      # since the duplexer usually runs on the Docker host rather than in
+      # this compose stack; override in .env if yours runs elsewhere.
+      MESHCORE_HOST: "${MESHCORE_HOST:-host.docker.internal}"
+      MESHCORE_PORT: "${MESHCORE_PORT:-5000}"
+
+      # Your WDGoWars API key -- use a .env file to keep this out of compose
+      WDGWARS_API_KEY: "${WDGWARS_API_KEY}"
+
+      WDGWARS_UPLOAD_URL: "${WDGWARS_UPLOAD_URL:-https://wdgwars.pl/api/upload/}"
+
+      # How often (in seconds) to flush buffered sightings to WDGoWars
+      WDGWARS_FLUSH_INTERVAL: "${WDGWARS_FLUSH_INTERVAL:-30}"
+
+      # Node records per upload request
+      WDGWARS_BATCH_SIZE: "${WDGWARS_BATCH_SIZE:-1000}"
+
+      # Seconds to wait before retrying the MeshCore connection after a drop
+      WDGWARS_RECONNECT_DELAY: "${WDGWARS_RECONNECT_DELAY:-10}"
+
+      # Log verbosity: DEBUG, INFO, WARNING
+      WDGWARS_LOG_LEVEL: "${WDGWARS_LOG_LEVEL:-INFO}"
+
+    extra_hosts:
+      # Lets host.docker.internal resolve on Linux (Docker Desktop already
+      # provides this on macOS/Windows).
+      - "host.docker.internal:host-gateway"
+
+    # Optional: limit resource usage
+    deploy:
+      resources:
+        limits:
+          memory: 128M
